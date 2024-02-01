@@ -483,9 +483,9 @@ $WebServers_requirement = [Math]::Ceiling((($global:SQL_reslts.Active_user.Colum
 
 if($Web_count -ge ($global:SQL_reslts.Active_user.Column1)/175){Write-Host "`nWeb servers available : " $Web_count "| Required : "$Web_count -ForegroundColor Green}
 elseif($Web_count -ge $WebServers_requirement){
-Write-Host -NoNewline "`nWeb servers available : "$Web_count " | Required :",$WebServers_requirement -ForegroundColor Green
+Write-Host "`nWeb servers available : "$Web_count" | Required :",$WebServers_requirement -ForegroundColor Green
 }else{
-Write-Host -NoNewline "`nWeb servers available : "$Web_count " | Required :", $WebServers_requirement -ForegroundColor Red
+Write-Host "`nWeb servers available : "$Web_count" | Required :", $WebServers_requirement -ForegroundColor Red
 }
 
 try {
