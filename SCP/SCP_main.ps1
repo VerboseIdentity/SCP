@@ -48,11 +48,12 @@ function DB_Connection {
         
         -- Calculate the total size of the data files
         SELECT
-            SUM(CAST(size AS bigint) * 8 / 1024) AS SizeMB
+           SUM(CAST(size AS bigint) * 8 / 1024) AS SizeMB
         FROM
-            sys.master_files
+            sys.master_files A
+		inner join sys.databases B on A.database_id=B.database_id and B.name='Works'
         WHERE
-            type = 0; -- 0 indicates data file"
+            type =0 ; -- 0 indicates data file"
         
         SQL_Valuation = "declare @sqlstatement nvarchar(max)
         set @sqlstatement='
