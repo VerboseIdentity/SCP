@@ -280,6 +280,7 @@ Summary_export_DB
 Write-Host "Initialising SCP valuation ..." -ForegroundColor Yellow
 $Servers = Get-Content -Path ".\Servers.txt"
 Remove-Item -Path ".\Output.xlsx" -ErrorAction SilentlyContinue
+Copy-Item -Path ".\.Temp\Output.xlsx" -Destination . -Force
 
 Foreach($Server in $Servers){
 
@@ -505,7 +506,9 @@ catch {
 
 
 ########################## Pycode Execution #######################################
-Start-Process -FilePath ".\SCP_formatting.exe"
-
+Start-Process -FilePath ".\SCP_formatting.exe" -Wait
+Start-Process -FilePath ".\SCP_formatting_failure_extended.exe" -Wait
+Start-Process -FilePath ".\Worksheets_re-ordered.exe" -Wait
+Start-Process -FilePath ".\SCP_summary_analysis_text_adjustment.exe"
 echo ""
 powershell -noexit

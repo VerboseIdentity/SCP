@@ -79,7 +79,7 @@ else{Add-Member -InputObject $Quick_export -NotePropertyName OverAll_review -Not
 $positive_condition = New-ConditionalText PASSED -BackgroundColor GREEN -ConditionalTextColor BLACK
 $Negative_condition = New-ConditionalText FAILED -BackgroundColor RED -ConditionalTextColor BLACK
 
-$Quick_export | Export-Excel -Path ".\Output.xlsx" -AutoSize -Append -ConditionalText $positive_condition,$Negative_condition -BoldTopRow -WorksheetName "Quick_reqference"
+$Quick_export | Export-Excel -Path ".\Output.xlsx" -AutoSize -Append -ConditionalText $positive_condition,$Negative_condition -BoldTopRow -WorksheetName "Quick_reference"
 
 
 <#*************************************************************** Summary *******************************************************************************************************************************#>
@@ -105,6 +105,13 @@ $Headers_SES_Valuation = New-ConditionalText "SES_Valuation" -BackgroundColor Ye
 $Header = [PSCustomObject]@{ Server_Name = 'Server_Name'; Categories = 'Categories'; Current_value = 'Current_value' ; Requirement = 'Requirement'; SES_Valuation = 'SES_Valuation'}
 $positive_condition = New-ConditionalText PASSED -BackgroundColor GREEN -ConditionalTextColor BLACK
 $Negative_condition = New-ConditionalText FAILED -BackgroundColor RED -ConditionalTextColor BLACK
+
+
+if($failure -eq 1){
+
+$data | Export-Excel -Path ".\Output.xlsx" -Append -AutoSize -ConditionalText $positive_condition,$Negative_condition,$Headers,$Headers_Server_Name,$Headers_Categories,$Headers_Current_value,$Headers_Requirement,$Headers_SES_Valuation -BoldTopRow -WorksheetName "Failure_Summary"
+
+}
 
 $data | Export-Excel -Path ".\Output.xlsx" -Append -AutoSize -ConditionalText $positive_condition,$Negative_condition,$Headers,$Headers_Server_Name,$Headers_Categories,$Headers_Current_value,$Headers_Requirement,$Headers_SES_Valuation -BoldTopRow -WorksheetName "Summary"
 
