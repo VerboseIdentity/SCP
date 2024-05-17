@@ -5,8 +5,9 @@ $excel = New-Object -ComObject Excel.Application
 $excel.DisplayAlerts = $false
 $excel.Visible = $false
 
-# Open the Excel file (replace "FullPath\FileName.xlsx" with your actual file path)
-$workbook = $excel.Workbooks.Open(".\.Temp\PDF_Output.xlsx")
+$file_path = (Join-Path -Path (pwd) -ChildPath "PDF_Output.xlsx")
+
+$workbook = $excel.Workbooks.Open($file_path)
 
 # Set print options for the entire workbook
 $excel.ActivePrinter = "Microsoft Print to PDF"
@@ -18,7 +19,7 @@ foreach ($worksheet in $workbook.Worksheets) {
     
     # Add borders to cells
     foreach ($cell in $usedRange.Cells) {
-        if($Count -ne 2){
+        if($Count -ne 2 -or $Count -ne 1){
         $cell.Borders.Weight = 2  # Thick borders
         $cell.WrapText = $true  # Enable text wrapping
         }
