@@ -15,16 +15,24 @@ $excel.PrintCommunication = $true
 
 foreach ($worksheet in $workbook.Worksheets) {
     $usedRange = $worksheet.UsedRange
-    $Count += 1
+    $foundServerName = $false  # Flag to indicate when "Server_Name" is found
     
-    # Add borders to cells
-    foreach ($cell in $usedRange.Cells) {
-        if($Count -ne 2 -or $Count -ne 1){
-        $cell.Borders.Weight = 2  # Thick borders
-        $cell.WrapText = $true  # Enable text wrapping
+    # Iterate over each row in the used range
+    foreach ($row in $usedRange.Rows) {
+        foreach ($cell in $row.Cells) {
+            if ($worksheet.Name -eq "Cover Page" -or $worksheet.Name -eq "Knowledge") {
+                continue
+            }
+            elseif ($cell.Value2 -eq "Server_Name") {
+                $foundServerName = $true  # Set flag to true when "Server_Name" is found
+            }
+            # Apply borders and wrapping only if "Server_Name" has been found and the cell value is not "Analysis"
+            elseif ($foundServerName -and $cell.Value2 -ne "Analysis") {
+                $cell.Borders.Weight = 2  # Thick borders
+                $cell.WrapText = $true  # Enable text wrapping
+            }
         }
     }
-
 
     $usedRange.HorizontalAlignment = -4108  # Center alignment
 
@@ -49,3 +57,5 @@ $excel.Quit()
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
 Remove-Variable excel
+
+Write-Output "Completed'."
