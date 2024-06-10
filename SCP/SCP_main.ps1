@@ -507,7 +507,6 @@ catch {
 
 ########################## Pycode Execution #######################################
 Start-Process -FilePath ".\SCP_formatting.exe" -Wait
-Start-Process -FilePath ".\SCP_formatting_failure_extended.exe" -Wait
 Start-Process -FilePath ".\Worksheets_re-ordered.exe" -Wait
 Start-Process -FilePath ".\SCP_summary_analysis_text_adjustment.exe" -Wait
 Start-Process -FilePath ".\SCP_PDF_Pre_Requisite.exe"
