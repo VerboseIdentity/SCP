@@ -22,7 +22,7 @@ else{Add-Member -InputObject $Quick_export -NotePropertyName OverAll_review -Not
 $positive_condition = New-ConditionalText PASSED -BackgroundColor GREEN -ConditionalTextColor BLACK
 $Negative_condition = New-ConditionalText FAILED -BackgroundColor RED -ConditionalTextColor BLACK
 
-$Quick_export | Export-Excel -Path ".\Output.xlsx" -AutoSize -Append -ConditionalText $positive_condition,$Negative_condition -BoldTopRow -WorksheetName "Quick_reqference"
+$Quick_export | Export-Excel -Path ".\Output.xlsx" -AutoSize -Append -ConditionalText $positive_condition,$Negative_condition -BoldTopRow -WorksheetName "Quick_reference"
 
 
 
