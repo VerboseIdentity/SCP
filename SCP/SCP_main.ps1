@@ -506,10 +506,10 @@ catch {
 
 
 ########################## Pycode Execution #######################################
-Start-Process -FilePath ".\SCP_formatting.exe" -Wait
-Start-Process -FilePath ".\SCP_Additional_line_removal.exe" -Wait
-Start-Process -FilePath ".\Worksheets_re-ordered.exe" -Wait
-Start-Process -FilePath ".\SCP_summary_analysis_text_adjustment.exe" -Wait
-Start-Process -FilePath ".\SCP_PDF_Pre_Requisite.exe"
+Start-Process -FilePath ".\Py_binaries\SCP_formatting.exe" -Wait
+Start-Process -FilePath ".\Py_binaries\SCP_Additional_line_removal.exe" -Wait
+Start-Process -FilePath ".\Py_binaries\Worksheets_re-ordered.exe" -Wait
+Start-Process -FilePath ".\Py_binaries\SCP_summary_analysis_text_adjustment.exe" -Wait
+Start-Process -FilePath ".\Py_binaries\SCP_PDF_Pre_Requisite.exe"
 echo ""
 powershell -noexit
