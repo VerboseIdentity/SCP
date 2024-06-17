@@ -51,8 +51,13 @@ $Header = [PSCustomObject]@{ Server_Name = 'Server_Name'; Categories = 'Categori
 $positive_condition = New-ConditionalText PASSED -BackgroundColor GREEN -ConditionalTextColor BLACK
 $Negative_condition = New-ConditionalText FAILED -BackgroundColor RED -ConditionalTextColor BLACK
 
-$data | Export-Excel -Path ".\Output.xlsx" -Append -AutoSize -ConditionalText $positive_condition,$Negative_condition,$Headers,$Headers_Server_Name,$Headers_Categories,$Headers_Current_value,$Headers_Requirement,$Headers_SES_Valuation -BoldTopRow -WorksheetName "Summary"
+if($failure -eq 1){
 
+$data | Export-Excel -Path ".\Output.xlsx" -Append -AutoSize -ConditionalText $positive_condition,$Negative_condition,$Headers,$Headers_Server_Name,$Headers_Categories,$Headers_Current_value,$Headers_Requirement,$Headers_SES_Valuation -BoldTopRow -WorksheetName "Failure_Summary"
+
+}
+
+$data | Export-Excel -Path ".\Output.xlsx" -Append -AutoSize -ConditionalText $positive_condition,$Negative_condition,$Headers,$Headers_Server_Name,$Headers_Categories,$Headers_Current_value,$Headers_Requirement,$Headers_SES_Valuation -BoldTopRow -WorksheetName "Summary"
 
 }
 
