@@ -3,35 +3,35 @@
 #SES_requirements
 #################
 
-$Web = @{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2016 Standard","Windows Server 2016 Datacenter","Windows Server 2016 Enterprise","Windows Server 2019 Enterprise"
+$Web = @{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2022 Standard","Windows Server 2022 Datacenter","Windows Server 2022 Enterprise","Windows Server 2019 Enterprise"
 RAM = 28
 Proc = 8}
 
-$Msg = @{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2016 Standard","Windows Server 2016 Datacenter","Windows Server 2016 Enterprise","Windows Server 2019 Enterprise"
+$Msg = @{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2022 Standard","Windows Server 2022 Datacenter","Windows Server 2022 Enterprise","Windows Server 2019 Enterprise"
 RAM = 4
 Proc = 2}
 
-$Fax = @{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2016 Standard","Windows Server 2016 Datacenter","Windows Server 2016 Enterprise","Windows Server 2019 Enterprise"
+$Fax = @{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2022 Standard","Windows Server 2022 Datacenter","Windows Server 2022 Enterprise","Windows Server 2019 Enterprise"
 RAM = 8
 Proc = 2}
 
-$Prt = @{ OS  = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2016 Standard","Windows Server 2016 Datacenter","Windows Server 2016 Enterprise","Windows Server 2019 Enterprise"
+$Prt = @{ OS  = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2022 Standard","Windows Server 2022 Datacenter","Windows Server 2022 Enterprise","Windows Server 2019 Enterprise"
 RAM = 4
 Proc = 2}
 
-$Acdm = @{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2016 Standard","Windows Server 2016 Datacenter","Windows Server 2016 Enterprise","Windows Server 2019 Enterprise"
+$Acdm = @{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2022 Standard","Windows Server 2022 Datacenter","Windows Server 2022 Enterprise","Windows Server 2019 Enterprise"
 RAM = 4
 Proc = 2}
 
-$Scan = @{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2016 Standard","Windows Server 2016 Datacenter","Windows Server 2016 Enterprise","Windows Server 2019 Enterprise"
+$Scan = @{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2022 Standard","Windows Server 2022 Datacenter","Windows Server 2022 Enterprise","Windows Server 2019 Enterprise"
 RAM = 4
 Proc = 2}
 
-$Unity = @{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2016 Standard","Windows Server 2016 Datacenter","Windows Server 2016 Enterprise","Windows Server 2019 Enterprise"
+$Unity = @{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2022 Standard","Windows Server 2022 Datacenter","Windows Server 2022 Enterprise","Windows Server 2019 Enterprise"
 RAM = 8
 Proc = 2}
 
-$DB =@{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2016 Standard","Windows Server 2016 Datacenter","Windows Server 2016 Enterprise","Windows Server 2019 Enterprise"
+$DB =@{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Windows Server 2022 Standard","Windows Server 2022 Datacenter","Windows Server 2022 Enterprise","Windows Server 2019 Enterprise"
 }
 
 
@@ -223,7 +223,7 @@ function Non_DB_export{
 param($SES, $Current_value)
 
 $Global:myData = @( 
-    [PSCustomObject]@{ Server_Name = $server.Split(",")[0]; Type = $server.Split(",")[1]; OS_Requirement = "Windows Server 2019 or 2016 (Standanrd, Datacenter or Enterprise)";
+    [PSCustomObject]@{ Server_Name = $server.Split(",")[0]; Type = $server.Split(",")[1]; OS_Requirement = "Windows Server 2019 or 2022 (Standanrd, Datacenter or Enterprise)";
     OS_Available = $Current_value.OS; OS_Valuation = $os_valuation = if($Current_value.OS -notin $SES.OS){"FAILED"}else{"PASSED"}; 
     RAM_Requirement_GB = $SES.RAM; RAM_Available_GB = $Current_value.RAM; RAM_Valuation = $RAM_valuation = if([int]$Current_value.RAM -ge [int]$SES.RAM){"PASSED"}else{"FAILED"};
     CPU_requirement = $SES.Proc; CPU_Available = $Current_value.Proc; CPU_Valuation = if([int]$Current_value.Proc -ge [int]$SES.Proc){"PASSED"}else{"FAILED"};
@@ -250,7 +250,7 @@ function DB_export{
 param($OS, $Current_value)
 
 $Global:SQL_data = @( 
-    [PSCustomObject]@{ Server_Name = $server.Split(",")[0]; Type = $server.Split(",")[1]; OS_Requirement = "Windows Server 2019 or 2016 (Standanrd, Datacenter or Enterprise)";
+    [PSCustomObject]@{ Server_Name = $server.Split(",")[0]; Type = $server.Split(",")[1]; OS_Requirement = "Windows Server 2019 or 2022 (Standanrd, Datacenter or Enterprise)";
     OS_Available = $Current_value.OS; OS_Valuation = if($Current_value.OS -notin $OS.OS){"FAILED"}else{"PASSED"};
     RAM_Requirement_GB = $RAM_Required; RAM_Available_GB = $Current_value.RAM; RAM_Valuation = $RAM_valuation = if([int]$Current_value.RAM -ge [int]$RAM_Required){"PASSED"}else{"FAILED"};
     CPU_requirement = $Cores; CPU_Available = $Current_value.Proc; CPU_Valuation = if([int]$Current_value.Proc -ge [int]$Cores){"PASSED"}else{"FAILED"};
