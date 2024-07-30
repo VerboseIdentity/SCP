@@ -44,16 +44,7 @@ function DB_Connection {
         Active_users = "select COUNT(*) from works..IDX_User where IsInactiveFLAG = 'N'"
         Encounters = "select COUNT(*) as Last360Days from Works..Encounter nolock where dttm >= dateadd (day, -360, getdate()) and dttm <= getdate()"
         Appointments = "select COUNT(*) as Last360Days from Works..Appointment nolock where Startdttm >= dateadd (day, -360, getdate()) and Startdttm <= getdate() and AppointmentStatusDE not in (3, 6, 9, 5, 7)"
-        Works_size = "USE Works; -- Replace 'YourDatabaseName' with the actual name of your database
-        
-        -- Calculate the total size of the data files
-        SELECT
-           SUM(CAST(size AS bigint) * 8 / 1024) AS SizeMB
-        FROM
-            sys.master_files A
-		inner join sys.databases B on A.database_id=B.database_id and B.name='Works'
-        WHERE
-            type =0 ; -- 0 indicates data file"
+        Works_size = "USE Works; SELECT SUM(CAST(size AS bigint) * 8 / 1024) AS TotalSizeMB FROM sys.master_files WHERE database_id = DB_ID('Works');"
         
         SQL_Valuation = "declare @sqlstatement nvarchar(max)
         set @sqlstatement='
