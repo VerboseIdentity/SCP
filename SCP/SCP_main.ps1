@@ -36,139 +36,98 @@ $DB =@{ OS = "Windows Server 2019 Standard","Windows Server 2019 Datacenter","Wi
 
 
 ################################# SQL Connection and Query ####################################################
-function DB_Connection {
-    param($Server)
 
-        $SqlServer = Read-Host "`nPlease enter the Database instance name "
-        $Query =@{ SQLVersion = "SELECT @@Version"
-        Active_users = "select COUNT(*) from works..IDX_User where IsInactiveFLAG = 'N'"
-        Encounters = "select COUNT(*) as Last360Days from Works..Encounter nolock where dttm >= dateadd (day, -360, getdate()) and dttm <= getdate()"
-        Appointments = "select COUNT(*) as Last360Days from Works..Appointment nolock where Startdttm >= dateadd (day, -360, getdate()) and Startdttm <= getdate() and AppointmentStatusDE not in (3, 6, 9, 5, 7)"
-        Works_size = "USE Works; SELECT SUM(CAST(size AS bigint) * 8 / 1024) AS TotalSizeMB FROM sys.master_files WHERE database_id = DB_ID('Works');"
+function DB_connection {
+
+    $serverInstance = Read-Host "`nEnter the SQL Listener or Instance Name"
+    $databaseName = "Works"
+    $queries = @{
+        SQLVersion = "SELECT @@VERSION"
+        Active_Users = "SELECT COUNT(*) FROM works..IDX_User WHERE IsInactiveFLAG = 'N'"
+        Encounters = "SELECT COUNT(*) AS Last360Days FROM Works..Encounter WITH (NOLOCK) WHERE dttm >= DATEADD(day, -360, GETDATE()) AND dttm <= GETDATE()"
+        Appointments = "SELECT COUNT(*) AS Last360Days FROM Works..Appointment WITH (NOLOCK) WHERE Startdttm >= DATEADD(day, -360, GETDATE()) AND Startdttm <= GETDATE() AND AppointmentStatusDE NOT IN (3, 6, 9, 5, 7)"
+        Works_Size = "USE Works; SELECT SUM(CAST(size AS bigint) * 8 / 1024) AS TotalSizeMB FROM sys.master_files WHERE database_id = DB_ID('Works');"
+        SQL_Valuation = "DECLARE @sqlstatement NVARCHAR(MAX)
+        SET @sqlstatement = '
+        DECLARE @ProductMajorVersion INT,
+                @ProductName VARCHAR(255),
+                @ProductLevel VARCHAR(10),
+                @ProductEdition VARCHAR(20),
+                @ProductUpdateLevel VARCHAR(10),
+                @ProductCUNumber INT
         
-        SQL_Valuation = "declare @sqlstatement nvarchar(max)
-        set @sqlstatement='
-        DECLARE @ProductMajorVersion INT,	-- e.g. 13, 14, 15
-                @ProductName	VARCHAR(255),
-                @ProductLevel	VARCHAR(10),	-- e.g. SP1, RTM
-                @ProductEdition	VARCHAR(20),		-- e.g. Enterprise or Standard
-                @ProductUpdateLevel	VARCHAR(10),		-- e.g. CU1, CU2
-                @ProductCUNumber	int			-- e.g. 1 for CU1, 2 for CU2
+        SELECT @ProductMajorVersion = TRY_CONVERT(INT, SERVERPROPERTY(''ProductMajorVersion'')),
+            @ProductLevel = LEFT(CAST(SERVERPROPERTY(''ProductLevel'') AS VARCHAR), 10),
+            @ProductUpdateLevel = CAST(SERVERPROPERTY(''ProductUpdateLevel'') AS VARCHAR)
         
-        
-        
-        
-        
-        SELECT	@ProductMajorVersion = try_convert(int,serverproperty(''ProductMajorVersion'')),
-                @ProductLevel	= LEFT(CAST(SERVERPROPERTY(''ProductLevel'') AS varchar), 10),
-                @ProductUpdateLevel	= CAST(SERVERPROPERTY(''ProductUpdateLevel'') AS varchar)
-        
-        
-        
-        
-        
-        SELECT	@ProductName = CASE @ProductMajorVersion
-                                    WHEN 11		THEN ''SQL Server 2012''
-                                    WHEN 12		THEN ''SQL Server 2014''
-                                    WHEN 13		THEN ''SQL Server 2016''
-                                    WHEN 14		THEN ''SQL Server 2017''
-                                    WHEN 15		THEN ''SQL Server 2019''
+        SELECT @ProductName = CASE @ProductMajorVersion
+                                WHEN 11 THEN ''SQL Server 2012''
+                                WHEN 12 THEN ''SQL Server 2014''
+                                WHEN 13 THEN ''SQL Server 2016''
+                                WHEN 14 THEN ''SQL Server 2017''
+                                WHEN 15 THEN ''SQL Server 2019''
+                                WHEN 16 THEN ''SQL Server 2022''
                             END,
-                @ProductEdition = CASE CAST(SERVERPROPERTY(''EngineEdition'') AS int)
-                                        WHEN 2	THEN ''Standard''		-- Standard, Web, and Business Intelligence
-                                        WHEN 3	THEN ''Enterprise''	-- Enterprise, Developer, and Evaluation
-                                        WHEN 8	THEN ''Managed Instance''	-- Enterprise (32-bit), Enterprise (64-bit), Developer, and Evaluation
-                                        ELSE		 ''Other''		-- 4=Express, 5=Azure SQL Database, 6=Azure SQL Data Warehouse
+            @ProductEdition = CASE CAST(SERVERPROPERTY(''EngineEdition'') AS INT)
+                                    WHEN 2 THEN ''Standard''
+                                    WHEN 3 THEN ''Enterprise''
+                                    WHEN 8 THEN ''Managed Instance''
+                                    ELSE ''Other''
                                 END
         
-        
-        
-        
-        
-        SET @ProductCUNumber = ISNULL(TRY_CONVERT(int,SUBSTRING(@ProductUpdateLevel,3,3)),0)
-        
-        
-        
-        
+        SET @ProductCUNumber = ISNULL(TRY_CONVERT(INT, SUBSTRING(@ProductUpdateLevel, 3, 3)), 0)
         
         IF @ProductEdition = ''Managed Instance''
             SET @ProductName = ''SQL Server Managed Instance''
-        ELSE 
+        ELSE
             SET @ProductName = CONCAT(@ProductName, '' '', @ProductLevel, '' '', @ProductUpdateLevel, '' '', @ProductEdition + '' Edition'')
         
+        DECLARE @ErrorMessage VARCHAR(1000),
+                @CRLF VARCHAR(2) = CHAR(13) + CHAR(10),
+                @Msg VARCHAR(100)
         
+        SET @Msg = ''You are on a supported SQL platform: SQL Server 2019 CU5+ or SQL Server 2022 CU11+''
         
-        
-        
-        
-        
-        DECLARE	@ErrorMessage	VARCHAR(1000),
-                @CRLF VARCHAR(2) = CHAR(13) + CHAR(10)	---- Carriage Return, Line Feed,
-            ,@Msg VARCHAR(100)	
-                Set @Msg = ''You are using a supported SQL platform (SQL Server 2019 (CU5 or greater))''
-        
-        
-        
-        
-        
-        -- Verify supported SQL versions and editions
-        IF (@ProductMajorVersion = 15 AND @ProductCUNumber >= 5 AND @ProductEdition IN (''Enterprise'',''Standard''))
-        OR (@ProductMajorVersion > 15 AND @ProductEdition IN (''Enterprise'',''Standard''))
-        OR  @ProductEdition = ''Managed Instance''
-            select @Msg as Msg
+        IF (@ProductMajorVersion = 15 AND @ProductCUNumber >= 5 AND @ProductEdition IN (''Enterprise'', ''Standard''))
+        OR (@ProductMajorVersion = 16 AND @ProductCUNumber >= 11 AND @ProductEdition IN (''Enterprise'', ''Standard''))
+        OR (@ProductMajorVersion > 16 AND @ProductEdition IN (''Enterprise'', ''Standard''))
+        OR @ProductEdition = ''Managed Instance''
+            SELECT @Msg AS Msg
         ELSE
-            begin
-                set @ErrorMessage =''Invalid SQL Server version or edition:'' + @ProductName
-                select @ErrorMessage as Msg
-                end
-        '
+            BEGIN
+                SET @ErrorMessage = ''Invalid SQL Server version or edition: '' + @ProductName
+                SELECT @ErrorMessage AS Msg
+            END'
         
-        exec sp_executesql @sqlstatement
+        EXEC sp_executesql @sqlstatement
         "
-        Spoolercount = "select count(distinct SPOOLER_NM) as 'Total Spoolers' 
-        from Works..Css_Job_Queue 
-        where SPOOLER_NM<>'' and convert(Date,DATETIME_REC_CREATE)=convert(Date,getdate()) 
-        and Job_Status_CD = 3
-        and JOB_TYPE_CD in ('Print','Fax')"
-
-        TotalJobcount = "select convert(Date,DATETIME_REC_CREATE)as 'Current Date',count(*) as 'count' 
-        From WOrks..Css_Job_Queue where SPOOLER_NM<>'' and convert(Date,DATETIME_REC_CREATE)=convert(Date,getdate()) 
-        and Job_Status_CD = 3
-        and JOB_TYPE_CD in ('Print','Fax')
-        group by convert(Date,DATETIME_REC_CREATE)
-        order by count(*) desc"
+        
+        Total_Spooler_Count = "SELECT COUNT(DISTINCT SPOOLER_NM) AS 'Total Spoolers' FROM Works..Css_Job_Queue WHERE SPOOLER_NM <> '' AND CONVERT(DATE, DATETIME_REC_CREATE) = CONVERT(DATE, GETDATE()) AND Job_Status_CD = 3 AND JOB_TYPE_CD IN ('Print', 'Fax')"
+        JobCount = "SELECT CONVERT(DATE, DATETIME_REC_CREATE) AS 'Current Date', COUNT(*) AS 'count' FROM Works..Css_Job_Queue WHERE SPOOLER_NM <> '' AND CONVERT(DATE, DATETIME_REC_CREATE) = CONVERT(DATE, GETDATE()) AND Job_Status_CD = 3 AND JOB_TYPE_CD IN ('Print', 'Fax') GROUP BY CONVERT(DATE, DATETIME_REC_CREATE) ORDER BY COUNT(*) DESC"
     }
+
+    $connectionString = "Server=$serverInstance;Database=$databaseName;Integrated Security=True;"
+
     try {
-        $global:SQL_reslts = Invoke-Command -ComputerName $Server -ScriptBlock{
-            @{ SQLVersion = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.SQLVersion
-                Active_user = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.Active_users
-                Encounters = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.Encounters
-                Appointments = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.Appointments
-                Works_size = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.Works_size
-                SQL_Valuation = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.SQL_Valuation
-                Total_Spooler_Count = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.Spoolercount
-                Jobcount = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.TotalJobcount
-            }
-        }           
-    }
-    catch {
-        Write-Host "Unable to login to the SQL Instance with default account, please provide a valid SQL Credentials."
-        $Credentials = Get-Credential -UserName "SQL_Account" -Message "Please provide a valid SQL Account"
+        $connection = New-Object System.Data.SqlClient.SqlConnection
+        $connection.ConnectionString = $connectionString
+        $connection.Open()
 
-        $global:SQL_reslts = Invoke-Command -ComputerName $Server -ScriptBlock{
-            @{ SQLVersion = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.SQLVersion -Credential $Credentials
-                Active_user = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.Active_users -Credential $Credentials
-                Encounters = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.Encounters -Credential $Credentials
-                Appointments = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $using:Query.Appointments -Credential $Credentials
-                Works_size = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.Works_size -Credential $Credentials
-                SQL_Valuation = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.SQL_Valuation -Credential $Credentials
-                Total_Spooler_Count = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.Spoolercount
-                Jobcount = Invoke-Sqlcmd -ServerInstance $SqlServer -Query $Using:Query.TotalJobcount
-            }
+        $global:SQL_reslts = @{}
+        foreach ($key in $queries.Keys) {
+            $command = $connection.CreateCommand()
+            $command.CommandText = $queries[$key]
+            $global:SQL_reslts[$key] = $command.ExecuteScalar()
         }
     }
+    catch {
+        Write-Host "An error occured:`n$_"
+    }
+    finally{
+        $connection.Close()
+    }
+
 }
-                
 
 ################################ Comparision and output ########################################################
 
@@ -194,10 +153,10 @@ Write-Host "`n*********************" ($Server.split(",")[0]) "******************
 if ($current_value.OS -notin $OS.OS){Write-Host "OS-FAILED :"$current_value.OS "is Incompatible" -ForegroundColor Red}else{Write-Host "OS-PASSED :",$current_value.OS,"is compatible" -ForegroundColor Green}
 if ([int]$current_value.RAM -ge [int]$RAM){Write-Host "RAM-PASSED : "$current_value.RAM "GB available |",$RAM,"GB RAM required for",$Works_size,"TB of Works_DB" -ForegroundColor Green}else{Write-Host "RAM-FAILED : "$current_value.RAM "GB available |",$RAM,"GB required for",$Works_size,"TB of Works_DB" -ForegroundColor Red}
 if ([int]$current_value.Proc -ge [int]$Proc){Write-Host "CPU-PASSED : "$current_value.Proc "Cores available |",$Proc,"cores required for",$Encounters,"encounters per year" -ForegroundColor Green}else{Write-Host "CPU-FAILED : "$current_value.Proc "Cores available |",$Proc ,"cores required for",$Encounters,"encounters per year" -ForegroundColor Red}
-if ([string]$global:SQL_reslts.SQL_Valuation.Msg -eq "You are using a supported SQL platform (SQL Server 2019 (CU5 or greater))"){Write-Host "SQL_PASSED : ",$global:SQL_reslts.SQL_Valuation.Msg -ForegroundColor Green}else{Write-Host "SQL-FAILED :",$global:SQL_reslts.SQL_Valuation.Msg -ForegroundColor Red}; 
-Write-Host "Total encounters : ",$global:SQL_reslts.Encounters.Last360Days
-Write-Host "Total appoinments : ",$global:SQL_reslts.Appointments.Last360Days
-Write-Host "Total Active Users : ",$global:SQL_reslts.Active_user.Column1
+if ([string]$global:SQL_reslts.SQL_Valuation -eq "You are on a supported SQL platform: SQL Server 2019 CU5+ or SQL Server 2022 CU11+"){Write-Host "SQL_PASSED : ",$global:SQL_reslts.SQL_Valuation -ForegroundColor Green}else{Write-Host "SQL-FAILED :",$global:SQL_reslts.SQL_Valuation -ForegroundColor Red}; 
+Write-Host "Total encounters : ",$global:SQL_reslts.Encounters
+Write-Host "Total appoinments : ",$global:SQL_reslts.Appointments
+Write-Host "Total Active Users : ",$global:SQL_reslts.Active_users
 Write-Host "Works_DB_size : ",$Works_size "TB"
 }
 
@@ -246,9 +205,9 @@ $Global:SQL_data = @(
     RAM_Requirement_GB = $RAM_Required; RAM_Available_GB = $Current_value.RAM; RAM_Valuation = $RAM_valuation = if([int]$Current_value.RAM -ge [int]$RAM_Required){"PASSED"}else{"FAILED"};
     CPU_requirement = $Cores; CPU_Available = $Current_value.Proc; CPU_Valuation = if([int]$Current_value.Proc -ge [int]$Cores){"PASSED"}else{"FAILED"};
     Total_space_C_drive_GB = $Current_value.Total_space; Free_space_C_drive_GB = $Current_value.Free_space; Drive_Valuation = if($Current_value.Free_space -ge 20){"PASSED"}else{"FAILED"};
-    SQL_version_Requirements = "Microsoft SQL Server 2019 (CU5) or Above"; SQL_Version_Available = $global:SQL_reslts.SQLVersion.Column1; SQL_Valuation = if($global:SQL_reslts.SQL_Valuation.Msg -eq "You are using a supported SQL platform (SQL Server 2019 (CU5 or greater))"){"PASSED"}else{"FAILED"};
-    Total_Encounters = $Global:SQL_reslts.Encounters.Last360Days; Total_Appointments = $global:SQL_reslts.Appointments.Last360Days;
-    Total_Active_users = $Global:SQL_reslts.Active_user.Column1; 'Works_DB_size(TB)' = $Works_size
+    SQL_version_Requirements = "Microsoft SQL Server 2019 (CU5) or Above"; SQL_Version_Available = $global:SQL_reslts.SQLVersion; SQL_Valuation = if($global:SQL_reslts.SQL_Valuation -eq "You are on a supported SQL platform: SQL Server 2019 CU5+ or SQL Server 2022 CU11+"){"PASSED"}else{"FAILED"};
+    Total_Encounters = $Global:SQL_reslts.Encounters; Total_Appointments = $global:SQL_reslts.Appointments;
+    Total_Active_users = $global:SQL_reslts.Active_users; 'Works_DB_size(TB)' = $Works_size
 
     }
 
@@ -368,7 +327,7 @@ Non_DB_export -SES $Scan -Current_value $Scan_Server_currentvalue
 }
 elseif ($Server.Split(",")[1] -eq "DB"){
 
-DB_connection -Server $Server.Split(",")[0]
+DB_connection
 
 $DB_Server_currentvalue = Invoke-Command -ComputerName $Server.Split(",")[0] -ScriptBlock{ @{ OS = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").ProductName
 RAM = (Get-WmiObject -class "cim_physicalmemory" | Measure-Object -Property Capacity -Sum).Sum / 1024 / 1024 / 1024
@@ -379,13 +338,13 @@ Free_space = (Get-Volume C).SizeRemaining/1gb}}
 
 <#************************** DB RAM_requirement **********************************#>
 
-$Works_size = $Global:SQL_reslts.Works_size.SizeMB / 1048576
+$Works_size = $Global:SQL_reslts.Works_size / 1048576
 if($Works_size -le 1.0 ){$RAM_Required = 64}elseif($Works_size -le 1.5){$RAM_Required = 96}elseif($Works_size -le 2.0){$RAM_Required = 128}elseif($Works_size -le 2.5){$RAM_Required = 160}elseif($Works_size -le 3.0){$RAM_Required = 192}elseif($Works_size -le 3.5){$RAM_Required = 224
 }elseif($Works_size -le 4.0){$RAM_Required = 256}elseif($Works_size -le 4.5){$RAM_Required = 288}elseif($Works_size -le 5.0){$RAM_Required = 320}else{$RAM_Required = $Works_size * 320/5}
 
 <#************************** DB processor_requiment ******************************#>
 
-$Encounters = $Global:SQL_reslts.Encounters.Last360Days
+$Encounters = $Global:SQL_reslts.Encounters
 if($Encounters -le 500000 ){$Cores = 4}
 elseif($Encounters -le 1000000 ){$Cores = 6}
 elseif($Encounters -le 2000000 ){$Cores = 8}
@@ -413,8 +372,7 @@ elseif($Encounters -le 23000000 ){$Cores = 78}
 elseif($Encounters -le 24000000 ){$Cores = 80}
 else{$Cores = $Encounters * 80 / 24000000}
 
-$Appointments = $Global:SQL_reslts.Appointments.Last360Days
-
+$Appointments = $Global:SQL_reslts.Appointments
 if($Appointments -le 80000 ){$Appointment_Cores = 4}
 elseif($Appointments -le 170000 ){$Appointment_Cores = 6}
 elseif($Appointments -le 330000 ){$Appointment_Cores = 8}
@@ -454,7 +412,7 @@ DB_export -OS $DB -Current_value $DB_Server_currentvalue
 
 }
 elseif($Server.Split(",")[1] -eq "UNITY"){
-$FHIR_Server_currentvalue = Invoke-Command -ComputerName $Server.Split(",")[0] -ScriptBlock{ @{ OS = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").ProductName
+$Unity_Server_currentvalue = Invoke-Command -ComputerName $Server.Split(",")[0] -ScriptBlock{ @{ OS = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").ProductName
 RAM = (Get-WmiObject -class "cim_physicalmemory" | Measure-Object -Property Capacity -Sum).Sum / 1024 / 1024 / 1024
 Proc = (Get-ItemProperty "HKLM:\System\CurrentControlSet\Control\Session Manager\Environment").NUMBER_OF_PROCESSORS
 IPAddress = (Get-NetIPAddress -AddressFamily IPv4).IPAddress[0]
@@ -462,10 +420,10 @@ Total_space = (Get-Volume C).Size/1gb
 Free_space = (Get-Volume C).SizeRemaining/1gb}}
 
 #Print_console
-display -current_value $FHIR_Server_currentvalue -actual_value $Unity
+display -current_value $Unity_Server_currentvalue -actual_value $Unity
 
 #Non_DB_Export
-Non_DB_export -SES $Unity -Current_value $FHIR_Server_currentvalue
+Non_DB_export -SES $Unity -Current_value $Unity_Server_currentvalue
 
 }
 
@@ -489,9 +447,9 @@ else{Write-Host "`nThis is another server"
 continue}
 }
 
-$WebServers_requirement = [Math]::Ceiling((($global:SQL_reslts.Active_user.Column1)/175))
+$WebServers_requirement = [Math]::Ceiling((($global:SQL_reslts.Active_users)/175))
 
-if($Web_count -ge ($global:SQL_reslts.Active_user.Column1)/175){Write-Host "`nWeb servers available : " $Web_count "| Required : "$Web_count -ForegroundColor Green}
+if($Web_count -ge ($global:SQL_reslts.Active_users)/175){Write-Host "`nWeb servers available : " $Web_count "| Required : "$Web_count -ForegroundColor Green}
 elseif($Web_count -ge $WebServers_requirement){
 Write-Host "`nWeb servers available : "$Web_count" | Required :",$WebServers_requirement -ForegroundColor Green
 }else{
@@ -499,10 +457,10 @@ Write-Host "`nWeb servers available : "$Web_count" | Required :", $WebServers_re
 }
 
 try {
-    $Message_Requirement = [int]$Global:SQL_reslts.Jobcount.count / 5000
-    if ($Global:SQL_reslts.Total_Spooler_Count.'Total Spoolers' -ge $Message_Requirement) {
+    $Message_Requirement = [int]$Global:SQL_reslts.Jobcount / 5000
+    if ($Global:SQL_reslts.Total_Spooler_Count -ge $Message_Requirement) {
         Write-Host "Sufficient Message\Print Servers available" -ForegroundColor Green
-        $Total_Spoolers = $Global:SQL_reslts.Total_Spooler_Count.'Total Spoolers'
+        $Total_Spoolers = $Global:SQL_reslts.Total_Spooler_Count
     }
     else {
         Write-Host "Insufficient Message\Print Servers available : $Total_Spoolers' | Require : $Message_Requirement"
