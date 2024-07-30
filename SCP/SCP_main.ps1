@@ -454,7 +454,7 @@ DB_export -OS $DB -Current_value $DB_Server_currentvalue
 
 }
 elseif($Server.Split(",")[1] -eq "UNITY"){
-$Unity_Server_currentvalue = Invoke-Command -ComputerName $Server.Split(",")[0] -ScriptBlock{ @{ OS = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").ProductName
+$FHIR_Server_currentvalue = Invoke-Command -ComputerName $Server.Split(",")[0] -ScriptBlock{ @{ OS = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").ProductName
 RAM = (Get-WmiObject -class "cim_physicalmemory" | Measure-Object -Property Capacity -Sum).Sum / 1024 / 1024 / 1024
 Proc = (Get-ItemProperty "HKLM:\System\CurrentControlSet\Control\Session Manager\Environment").NUMBER_OF_PROCESSORS
 IPAddress = (Get-NetIPAddress -AddressFamily IPv4).IPAddress[0]
@@ -462,12 +462,29 @@ Total_space = (Get-Volume C).Size/1gb
 Free_space = (Get-Volume C).SizeRemaining/1gb}}
 
 #Print_console
-display -current_value $Unity_Server_currentvalue -actual_value $Unity
+display -current_value $FHIR_Server_currentvalue -actual_value $Unity
 
 #Non_DB_Export
-Non_DB_export -SES $Unity -Current_value $Unity_Server_currentvalue
+Non_DB_export -SES $Unity -Current_value $FHIR_Server_currentvalue
 
 }
+
+elseif($Server.Split(",")[1] -eq "FHIR"){
+$FHIR_Server_currentvalue = Invoke-Command -ComputerName $Server.Split(",")[0] -ScriptBlock{ @{ OS = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").ProductName
+RAM = (Get-WmiObject -class "cim_physicalmemory" | Measure-Object -Property Capacity -Sum).Sum / 1024 / 1024 / 1024
+Proc = (Get-ItemProperty "HKLM:\System\CurrentControlSet\Control\Session Manager\Environment").NUMBER_OF_PROCESSORS
+IPAddress = (Get-NetIPAddress -AddressFamily IPv4).IPAddress[0]
+Total_space = (Get-Volume C).Size/1gb
+Free_space = (Get-Volume C).SizeRemaining/1gb}}
+
+#Print_console
+display -current_value $FHIR_Server_currentvalue -actual_value $Unity
+
+#Non_DB_Export
+Non_DB_export -SES $Unity -Current_value $FHIR_Server_currentvalue
+
+}
+
 else{Write-Host "`nThis is another server"
 continue}
 }
